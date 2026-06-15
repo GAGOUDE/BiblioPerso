@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>BiblePerso</title>
+    <title>BiblioPerso - Suivi de lecture biblique LSG</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -12,200 +13,452 @@
             box-sizing: border-box;
         }
 
+        /* Variables pour le thème */
+        :root {
+            --bg-primary: #f0f2f5;
+            --bg-secondary: #ffffff;
+            --text-primary: #1a2a3a;
+            --text-secondary: #6c7a89;
+            --border-color: #eef2f7;
+            --card-bg: #ffffff;
+            --sidebar-bg: linear-gradient(180deg, #1a3a2a 0%, #0e261a 100%);
+            --sidebar-text: white;
+            --filter-bg: #f0f2f5;
+            --chapter-bg: #f0f2f5;
+        }
+
+        body.dark {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border-color: #2a2a2a;
+            --card-bg: #1e1e1e;
+            --sidebar-bg: linear-gradient(180deg, #0d2618 0%, #06120c 100%);
+            --sidebar-text: #e0e0e0;
+            --filter-bg: #2a2a2a;
+            --chapter-bg: #2a2a2a;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
-            color: #1a2a3a;
-            padding: 24px 20px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .app-layout {
+            display: flex;
             min-height: 100vh;
         }
 
-        .app-container {
-            max-width: 1400px;
-            margin: 0 auto;
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease, background 0.3s ease;
+            z-index: 1000;
+            transform: translateX(0);
         }
 
-        /* Header moderne */
-        .header-modern {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 32px;
-            padding: 24px 32px;
-            margin-bottom: 28px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+        .sidebar-header {
+            padding: 32px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
-        h1 {
-            font-size: 2rem;
+        .sidebar-header h1 {
+            font-size: 1.6rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #2c5f2d 0%, #1e3a2f 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            letter-spacing: -0.5px;
-            display: inline-flex;
-            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-header .version {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .bible-selector {
+            margin: 20px 16px;
+            padding: 16px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+        }
+
+        .bible-selector label {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            opacity: 0.8;
+        }
+
+        .bible-options {
+            display: flex;
             gap: 12px;
         }
 
-        .subhead {
-            color: #6c7a89;
-            margin-top: 8px;
-            font-weight: 400;
+        .bible-option {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        /* Panel progression */
-        .stats-modern {
-            background: linear-gradient(135deg, #1e3a2f 0%, #2c5f2d 100%);
-            border-radius: 28px;
-            padding: 24px 32px;
-            margin-bottom: 28px;
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        .bible-option.selected {
+            background: #ffd700;
+            color: #1a3a2a;
+            border-color: #ffd700;
+        }
+
+        .bible-option.selected .bible-count {
+            color: #1a3a2a;
+        }
+
+        .bible-option .bible-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .bible-option .bible-count {
+            font-size: 0.7rem;
+            opacity: 0.7;
+        }
+
+        .nav-menu {
+            padding: 16px 16px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            margin: 4px 0;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .nav-item:hover {
+            background: rgba(255,255,255,0.1);
             color: white;
         }
 
-        .stats-grid {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 24px;
+        .nav-item.active {
+            background: #ffd700;
+            color: #1a3a2a;
         }
 
-        .progress-card {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            background: rgba(255, 255, 255, 0.15);
-            padding: 12px 24px;
-            border-radius: 60px;
-            backdrop-filter: blur(8px);
+        .nav-item .emoji {
+            font-size: 1.3rem;
         }
 
-        .circle-progress {
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            background: conic-gradient(#ffd700 0deg, rgba(255,255,255,0.3) 0deg);
+        /* Theme toggle dans sidebar */
+        .theme-toggle {
+            margin-top: 20px;
+            padding: 16px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .theme-btn {
+            width: 100%;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            padding: 12px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 800;
-            font-size: 1.5rem;
-            color: #ffd700;
-            background-color: rgba(255,255,255,0.2);
-            transition: all 0.3s ease;
+            gap: 10px;
+            transition: all 0.2s;
         }
 
-        .stats-numbers {
-            font-size: 0.95rem;
-        }
-
-        .stats-numbers strong {
-            font-size: 2rem;
-            font-weight: 800;
-            display: inline-block;
-            margin: 0 4px;
-        }
-
-        .reset-actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 10px 22px;
-            border-radius: 40px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: none;
-            font-family: 'Inter', sans-serif;
+        .theme-btn:hover {
             background: rgba(255,255,255,0.2);
+        }
+
+        /* Hamburger */
+        .hamburger {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1100;
+            background: #1a3a2a;
+            border: none;
             color: white;
-            backdrop-filter: blur(4px);
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
-        .btn-danger {
-            background: rgba(220, 53, 69, 0.9);
-            color: white;
+        body.dark .hamburger {
+            background: #2c5f2d;
         }
 
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            filter: brightness(1.05);
-            background: rgba(220, 53, 69, 1);
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
         }
 
-        /* Filtres modernes */
-        .filters-section {
-            display: flex;
-            gap: 16px;
+        .overlay.active {
+            display: block;
+        }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 24px 32px;
+            transition: margin-left 0.3s;
+        }
+
+        /* Stats cards */
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
             margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+            transition: background 0.3s ease, border 0.3s ease;
+        }
+
+        .stat-card h4 {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c5f2d;
+        }
+
+        body.dark .stat-card .value {
+            color: #ffd700;
+        }
+
+        /* Filtres */
+        .filters-bar {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            display: flex;
             flex-wrap: wrap;
+            gap: 16px;
             align-items: center;
             justify-content: space-between;
+            border: 1px solid var(--border-color);
         }
 
         .testament-filters {
             display: flex;
-            gap: 12px;
-            background: white;
-            padding: 6px;
-            border-radius: 60px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            gap: 8px;
+            background: var(--filter-bg);
+            padding: 4px;
+            border-radius: 40px;
         }
 
         .testament-btn {
-            padding: 10px 28px;
+            padding: 8px 20px;
             border-radius: 40px;
             border: none;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
             background: transparent;
-            color: #5a6e7c;
-            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+            color: var(--text-primary);
         }
 
         .testament-btn.active {
             background: #2c5f2d;
             color: white;
-            box-shadow: 0 2px 8px rgba(44, 95, 45, 0.3);
         }
 
-        .search-modern {
-            background: white;
-            padding: 8px 20px;
-            border-radius: 60px;
+        .search-box {
             display: flex;
             align-items: center;
-            gap: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            gap: 8px;
+            background: var(--filter-bg);
+            padding: 8px 16px;
+            border-radius: 40px;
         }
 
-        .search-modern input {
+        .search-box input {
             border: none;
-            outline: none;
-            padding: 8px 0;
-            width: 220px;
-            font-size: 0.9rem;
             background: transparent;
+            outline: none;
+            width: 200px;
+            color: var(--text-primary);
         }
 
-        .search-modern span {
-            color: #8a9ba8;
+        .search-box input::placeholder {
+            color: var(--text-secondary);
         }
 
-        /* Grille livres */
-        .books-grid-modern {
+        .section {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Books grid */
+        .books-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 24px;
-            animation: fadeIn 0.3s ease;
+            gap: 20px;
+        }
+
+        .book-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s;
+        }
+
+        .book-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+
+        .book-header {
+            padding: 16px;
+            background: var(--bg-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .book-name {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .book-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            background: var(--filter-bg);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            color: var(--text-primary);
+        }
+
+        .btn-icon:hover {
+            background: #2c5f2d;
+            color: white;
+        }
+
+        .book-progress {
+            font-size: 0.7rem;
+            background: var(--filter-bg);
+            padding: 4px 10px;
+            border-radius: 20px;
+            color: var(--text-primary);
+        }
+
+        .chapters-list {
+            padding: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            user-select: none;
+        }
+
+        .chapter-pill {
+            background: var(--chapter-bg);
+            padding: 5px 12px;
+            border-radius: 25px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+            color: var(--text-primary);
+        }
+
+        .chapter-pill.selected {
+            background: #ffd700;
+            color: #1a3a2a;
+            transform: scale(0.95);
+        }
+
+        .chapter-pill.completed {
+            background: #2c5f2d;
+            color: white;
+        }
+
+        .chapter-pill.completed.selected {
+            background: #ffd700;
+            color: #1a3a2a;
+        }
+
+        .reset-book-btn {
+            background: none;
+            border: none;
+            font-size: 0.7rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            border-radius: 20px;
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        canvas {
+            max-height: 350px;
         }
 
         @keyframes fadeIn {
@@ -213,414 +466,572 @@
             to { opacity: 1; transform: translateY(0);}
         }
 
-        .book-card-modern {
-            background: white;
-            border-radius: 24px;
-            overflow: hidden;
-            transition: all 0.25s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .book-card-modern:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 30px -12px rgba(0, 0, 0, 0.15);
-        }
-
-        .book-header-modern {
-            padding: 18px 20px;
-            background: linear-gradient(135deg, #f8f9fc 0%, #ffffff 100%);
-            border-bottom: 2px solid #eef2f7;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .book-info h3 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #1e3a2f;
-        }
-
-        .book-progress-modern {
-            font-size: 0.75rem;
-            background: #e9ecef;
-            padding: 4px 12px;
-            border-radius: 20px;
-            color: #2c5f2d;
-            font-weight: 600;
-            display: inline-block;
-            margin-top: 6px;
-        }
-
-        .reset-book-btn {
-            background: none;
-            border: none;
-            font-size: 0.8rem;
-            cursor: pointer;
-            color: #adb5bd;
-            padding: 6px 12px;
-            border-radius: 30px;
-            transition: all 0.2s;
-        }
-
-        .reset-book-btn:hover {
-            background: #fee2e2;
-            color: #dc3545;
-        }
-
-        .chapters-grid {
-            padding: 16px 20px 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            max-height: 260px;
-            overflow-y: auto;
-        }
-
-        .chapter-pill {
-            background: #f1f3f5;
-            border-radius: 30px;
-            padding: 6px 14px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.15s;
-            color: #495057;
-            min-width: 48px;
-            text-align: center;
-        }
-
-        .chapter-pill.completed {
-            background: #2c5f2d;
-            color: white;
-            box-shadow: 0 2px 6px rgba(44, 95, 45, 0.3);
-        }
-
-        .chapter-pill:hover {
-            transform: scale(0.95);
-            background: #dee2e6;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px;
-            color: #8a9ba8;
-        }
-
         @media (max-width: 768px) {
-            .stats-grid {
-                flex-direction: column;
-                align-items: stretch;
+            .hamburger {
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
-            .books-grid-modern {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 80px 16px 24px;
+            }
+            .stats-cards {
                 grid-template-columns: 1fr;
             }
-            .filters-section {
-                flex-direction: column;
+            .books-grid {
+                grid-template-columns: 1fr;
             }
-        }
-
-        .book-badge {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #2c5f2d;
-            margin-right: 8px;
-        }
-
-        .user-indicator {
-            background: rgba(255,255,255,0.1);
-            border-radius: 20px;
-            padding: 4px 12px;
-            font-size: 0.7rem;
-            display: inline-block;
-            margin-left: 15px;
-            vertical-align: middle;
         }
     </style>
 </head>
 <body>
-<div class="app-container">
-    <div class="header-modern">
-        <h1>📖 BiblioPerso <span style="font-size: 1rem;">LSG</span></h1>
-        <div class="subhead">Suivez votre lecture chapitre par chapitre — Ancien & Nouveau Testament</div>
-    </div>
+    <button class="hamburger" id="hamburgerBtn">☰</button>
+    <div class="overlay" id="overlay"></div>
 
-    <div class="stats-modern">
-        <div class="stats-grid">
-            <div class="progress-card">
-                <div class="circle-progress" id="globalCircleModern">0%</div>
-                <div class="stats-numbers">
-                    📊 <strong id="completedChaptersModern">0</strong> / <span id="totalChaptersModern">0</span> chapitres<br>
-                    🏆 <strong id="completedBooksModern">0</strong> / <span id="totalBooksModern">0</span> livres complets
+    <div class="app-layout">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1>📖 BiblioPerso</h1>
+                <div class="version">LSG • Parcours de vie</div>
+            </div>
+            
+            <!-- Sélecteur de Bible -->
+            <div class="bible-selector">
+                <label>📖 Choisissez votre Bible</label>
+                <div class="bible-options">
+                    <div class="bible-option" data-bible="evangelique">
+                        <div class="bible-name">Évangélique</div>
+                        <div class="bible-count">66 livres</div>
+                    </div>
+                    <div class="bible-option" data-bible="catholique">
+                        <div class="bible-name">Catholique</div>
+                        <div class="bible-count">73 livres</div>
+                    </div>
                 </div>
             </div>
-            <div class="reset-actions">
-                <button class="btn btn-danger" id="resetAllBtnModern">🔄 Réinitialiser toute la Bible</button>
+
+            <div class="nav-menu">
+                <div class="nav-item active" data-section="reading">
+                    <span class="emoji">📚</span>
+                    <span>Ma lecture</span>
+                </div>
+                <div class="nav-item" data-section="stats">
+                    <span class="emoji">📊</span>
+                    <span>Statistiques</span>
+                </div>
+                <div class="theme-toggle">
+                    <button class="theme-btn" id="themeToggleBtn">
+                        <span id="themeIcon">🌙</span>
+                        <span id="themeText">Mode sombre</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content" id="mainContent">
+            <!-- Section Lecture -->
+            <div id="reading-section" class="section active">
+                <div class="filters-bar">
+                    <div class="testament-filters">
+                        <button class="testament-btn active" data-filter="all">Tous</button>
+                        <button class="testament-btn" data-filter="old">Ancien T.</button>
+                        <button class="testament-btn" data-filter="new">Nouveau T.</button>
+                        <button class="testament-btn" data-filter="deutero">Deutérocanoniques</button>
+                    </div>
+                    <div class="search-box">
+                        <span>🔍</span>
+                        <input type="text" id="searchInput" placeholder="Rechercher un livre...">
+                    </div>
+                </div>
+                <div id="booksContainer" class="books-grid"></div>
+            </div>
+
+            <!-- Section Statistiques -->
+            <div id="stats-section" class="section">
+                <div class="stats-cards" id="statsSummary"></div>
+                <div class="chart-container">
+                    <canvas id="statsChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h4 style="margin-bottom: 16px;">📊 Répartition AT / NT / Deutérocanoniques</h4>
+                    <canvas id="testamentChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="filters-section">
-        <div class="testament-filters">
-            <button class="testament-btn active" data-filter="all">📖 Tous les livres</button>
-            <button class="testament-btn" data-filter="old">📜 Ancien Testament</button>
-            <button class="testament-btn" data-filter="new">✝️ Nouveau Testament</button>
-        </div>
-        <div class="search-modern">
-            <span>🔍</span>
-            <input type="text" id="bookSearchModern" placeholder="Filtrer un livre...">
-        </div>
-    </div>
+    <script>
+        // BIBLE ÉVANGÉLIQUE (66 livres)
+        const EVANGELICAL_BOOKS = [
+            // Ancien Testament (39)
+            { name: "Genèse", chapters: 50, testament: "old", order: 1 }, { name: "Exode", chapters: 40, testament: "old", order: 2 },
+            { name: "Lévitique", chapters: 27, testament: "old", order: 3 }, { name: "Nombres", chapters: 36, testament: "old", order: 4 },
+            { name: "Deutéronome", chapters: 34, testament: "old", order: 5 }, { name: "Josué", chapters: 24, testament: "old", order: 6 },
+            { name: "Juges", chapters: 21, testament: "old", order: 7 }, { name: "Ruth", chapters: 4, testament: "old", order: 8 },
+            { name: "1 Samuel", chapters: 31, testament: "old", order: 9 }, { name: "2 Samuel", chapters: 24, testament: "old", order: 10 },
+            { name: "1 Rois", chapters: 22, testament: "old", order: 11 }, { name: "2 Rois", chapters: 25, testament: "old", order: 12 },
+            { name: "1 Chroniques", chapters: 29, testament: "old", order: 13 }, { name: "2 Chroniques", chapters: 36, testament: "old", order: 14 },
+            { name: "Esdras", chapters: 10, testament: "old", order: 15 }, { name: "Néhémie", chapters: 13, testament: "old", order: 16 },
+            { name: "Esther", chapters: 10, testament: "old", order: 17 }, { name: "Job", chapters: 42, testament: "old", order: 18 },
+            { name: "Psaumes", chapters: 150, testament: "old", order: 19 }, { name: "Proverbes", chapters: 31, testament: "old", order: 20 },
+            { name: "Ecclésiaste", chapters: 12, testament: "old", order: 21 }, { name: "Cantique des Cantiques", chapters: 8, testament: "old", order: 22 },
+            { name: "Ésaïe", chapters: 66, testament: "old", order: 23 }, { name: "Jérémie", chapters: 52, testament: "old", order: 24 },
+            { name: "Lamentations", chapters: 5, testament: "old", order: 25 }, { name: "Ézéchiel", chapters: 48, testament: "old", order: 26 },
+            { name: "Daniel", chapters: 12, testament: "old", order: 27 }, { name: "Osée", chapters: 14, testament: "old", order: 28 },
+            { name: "Joël", chapters: 3, testament: "old", order: 29 }, { name: "Amos", chapters: 9, testament: "old", order: 30 },
+            { name: "Abdias", chapters: 1, testament: "old", order: 31 }, { name: "Jonas", chapters: 4, testament: "old", order: 32 },
+            { name: "Michée", chapters: 7, testament: "old", order: 33 }, { name: "Nahum", chapters: 3, testament: "old", order: 34 },
+            { name: "Habakuk", chapters: 3, testament: "old", order: 35 }, { name: "Sophonie", chapters: 3, testament: "old", order: 36 },
+            { name: "Aggée", chapters: 2, testament: "old", order: 37 }, { name: "Zacharie", chapters: 14, testament: "old", order: 38 },
+            { name: "Malachie", chapters: 4, testament: "old", order: 39 },
+            // Nouveau Testament (27)
+            { name: "Matthieu", chapters: 28, testament: "new", order: 40 }, { name: "Marc", chapters: 16, testament: "new", order: 41 },
+            { name: "Luc", chapters: 24, testament: "new", order: 42 }, { name: "Jean", chapters: 21, testament: "new", order: 43 },
+            { name: "Actes", chapters: 28, testament: "new", order: 44 }, { name: "Romains", chapters: 16, testament: "new", order: 45 },
+            { name: "1 Corinthiens", chapters: 16, testament: "new", order: 46 }, { name: "2 Corinthiens", chapters: 13, testament: "new", order: 47 },
+            { name: "Galates", chapters: 6, testament: "new", order: 48 }, { name: "Éphésiens", chapters: 6, testament: "new", order: 49 },
+            { name: "Philippiens", chapters: 4, testament: "new", order: 50 }, { name: "Colossiens", chapters: 4, testament: "new", order: 51 },
+            { name: "1 Thessaloniciens", chapters: 5, testament: "new", order: 52 }, { name: "2 Thessaloniciens", chapters: 3, testament: "new", order: 53 },
+            { name: "1 Timothée", chapters: 6, testament: "new", order: 54 }, { name: "2 Timothée", chapters: 4, testament: "new", order: 55 },
+            { name: "Tite", chapters: 3, testament: "new", order: 56 }, { name: "Philémon", chapters: 1, testament: "new", order: 57 },
+            { name: "Hébreux", chapters: 13, testament: "new", order: 58 }, { name: "Jacques", chapters: 5, testament: "new", order: 59 },
+            { name: "1 Pierre", chapters: 5, testament: "new", order: 60 }, { name: "2 Pierre", chapters: 3, testament: "new", order: 61 },
+            { name: "1 Jean", chapters: 5, testament: "new", order: 62 }, { name: "2 Jean", chapters: 1, testament: "new", order: 63 },
+            { name: "3 Jean", chapters: 1, testament: "new", order: 64 }, { name: "Jude", chapters: 1, testament: "new", order: 65 },
+            { name: "Apocalypse", chapters: 22, testament: "new", order: 66 }
+        ];
 
-    <div id="booksContainerModern" class="books-grid-modern"></div>
-</div>
+        // BIBLE CATHOLIQUE (73 livres) = 46 AT + 27 NT
+        const CATHOLIC_BOOKS = [
+            // Ancien Testament (46)
+            { name: "Genèse", chapters: 50, testament: "old", order: 1 }, { name: "Exode", chapters: 40, testament: "old", order: 2 },
+            { name: "Lévitique", chapters: 27, testament: "old", order: 3 }, { name: "Nombres", chapters: 36, testament: "old", order: 4 },
+            { name: "Deutéronome", chapters: 34, testament: "old", order: 5 }, { name: "Josué", chapters: 24, testament: "old", order: 6 },
+            { name: "Juges", chapters: 21, testament: "old", order: 7 }, { name: "Ruth", chapters: 4, testament: "old", order: 8 },
+            { name: "1 Samuel", chapters: 31, testament: "old", order: 9 }, { name: "2 Samuel", chapters: 24, testament: "old", order: 10 },
+            { name: "1 Rois", chapters: 22, testament: "old", order: 11 }, { name: "2 Rois", chapters: 25, testament: "old", order: 12 },
+            { name: "1 Chroniques", chapters: 29, testament: "old", order: 13 }, { name: "2 Chroniques", chapters: 36, testament: "old", order: 14 },
+            { name: "Esdras", chapters: 10, testament: "old", order: 15 }, { name: "Néhémie", chapters: 13, testament: "old", order: 16 },
+            { name: "Tobie", chapters: 14, testament: "old", order: 17 }, { name: "Judith", chapters: 16, testament: "old", order: 18 },
+            { name: "Esther", chapters: 10, testament: "old", order: 19 }, { name: "1 Maccabées", chapters: 16, testament: "old", order: 20 },
+            { name: "2 Maccabées", chapters: 15, testament: "old", order: 21 }, { name: "Job", chapters: 42, testament: "old", order: 22 },
+            { name: "Psaumes", chapters: 150, testament: "old", order: 23 }, { name: "Proverbes", chapters: 31, testament: "old", order: 24 },
+            { name: "Ecclésiaste", chapters: 12, testament: "old", order: 25 }, { name: "Cantique des Cantiques", chapters: 8, testament: "old", order: 26 },
+            { name: "Sagesse", chapters: 19, testament: "old", order: 27 }, { name: "Siracide", chapters: 51, testament: "old", order: 28 },
+            { name: "Ésaïe", chapters: 66, testament: "old", order: 29 }, { name: "Jérémie", chapters: 52, testament: "old", order: 30 },
+            { name: "Lamentations", chapters: 5, testament: "old", order: 31 }, { name: "Baruch", chapters: 6, testament: "old", order: 32 },
+            { name: "Ézéchiel", chapters: 48, testament: "old", order: 33 }, { name: "Daniel", chapters: 14, testament: "old", order: 34 },
+            { name: "Osée", chapters: 14, testament: "old", order: 35 }, { name: "Joël", chapters: 4, testament: "old", order: 36 },
+            { name: "Amos", chapters: 9, testament: "old", order: 37 }, { name: "Abdias", chapters: 1, testament: "old", order: 38 },
+            { name: "Jonas", chapters: 4, testament: "old", order: 39 }, { name: "Michée", chapters: 7, testament: "old", order: 40 },
+            { name: "Nahum", chapters: 3, testament: "old", order: 41 }, { name: "Habakuk", chapters: 3, testament: "old", order: 42 },
+            { name: "Sophonie", chapters: 3, testament: "old", order: 43 }, { name: "Aggée", chapters: 2, testament: "old", order: 44 },
+            { name: "Zacharie", chapters: 14, testament: "old", order: 45 }, { name: "Malachie", chapters: 4, testament: "old", order: 46 },
+            // Nouveau Testament (27 - identique)
+            { name: "Matthieu", chapters: 28, testament: "new", order: 47 }, { name: "Marc", chapters: 16, testament: "new", order: 48 },
+            { name: "Luc", chapters: 24, testament: "new", order: 49 }, { name: "Jean", chapters: 21, testament: "new", order: 50 },
+            { name: "Actes", chapters: 28, testament: "new", order: 51 }, { name: "Romains", chapters: 16, testament: "new", order: 52 },
+            { name: "1 Corinthiens", chapters: 16, testament: "new", order: 53 }, { name: "2 Corinthiens", chapters: 13, testament: "new", order: 54 },
+            { name: "Galates", chapters: 6, testament: "new", order: 55 }, { name: "Éphésiens", chapters: 6, testament: "new", order: 56 },
+            { name: "Philippiens", chapters: 4, testament: "new", order: 57 }, { name: "Colossiens", chapters: 4, testament: "new", order: 58 },
+            { name: "1 Thessaloniciens", chapters: 5, testament: "new", order: 59 }, { name: "2 Thessaloniciens", chapters: 3, testament: "new", order: 60 },
+            { name: "1 Timothée", chapters: 6, testament: "new", order: 61 }, { name: "2 Timothée", chapters: 4, testament: "new", order: 62 },
+            { name: "Tite", chapters: 3, testament: "new", order: 63 }, { name: "Philémon", chapters: 1, testament: "new", order: 64 },
+            { name: "Hébreux", chapters: 13, testament: "new", order: 65 }, { name: "Jacques", chapters: 5, testament: "new", order: 66 },
+            { name: "1 Pierre", chapters: 5, testament: "new", order: 67 }, { name: "2 Pierre", chapters: 3, testament: "new", order: 68 },
+            { name: "1 Jean", chapters: 5, testament: "new", order: 69 }, { name: "2 Jean", chapters: 1, testament: "new", order: 70 },
+            { name: "3 Jean", chapters: 1, testament: "new", order: 71 }, { name: "Jude", chapters: 1, testament: "new", order: 72 },
+            { name: "Apocalypse", chapters: 22, testament: "new", order: 73 }
+        ];
 
-<script>
-    // ======================== DONNÉES BIBLIQUES (LSG) avec classification AT/NT =================
-    const BOOKS_DATA = [
-        // Ancien Testament (39)
-        { name: "Genèse", chapters: 50, testament: "old" }, { name: "Exode", chapters: 40, testament: "old" },
-        { name: "Lévitique", chapters: 27, testament: "old" }, { name: "Nombres", chapters: 36, testament: "old" },
-        { name: "Deutéronome", chapters: 34, testament: "old" }, { name: "Josué", chapters: 24, testament: "old" },
-        { name: "Juges", chapters: 21, testament: "old" }, { name: "Ruth", chapters: 4, testament: "old" },
-        { name: "1 Samuel", chapters: 31, testament: "old" }, { name: "2 Samuel", chapters: 24, testament: "old" },
-        { name: "1 Rois", chapters: 22, testament: "old" }, { name: "2 Rois", chapters: 25, testament: "old" },
-        { name: "1 Chroniques", chapters: 29, testament: "old" }, { name: "2 Chroniques", chapters: 36, testament: "old" },
-        { name: "Esdras", chapters: 10, testament: "old" }, { name: "Néhémie", chapters: 13, testament: "old" },
-        { name: "Esther", chapters: 10, testament: "old" }, { name: "Job", chapters: 42, testament: "old" },
-        { name: "Psaumes", chapters: 150, testament: "old" }, { name: "Proverbes", chapters: 31, testament: "old" },
-        { name: "Ecclésiaste", chapters: 12, testament: "old" }, { name: "Cantique des Cantiques", chapters: 8, testament: "old" },
-        { name: "Ésaïe", chapters: 66, testament: "old" }, { name: "Jérémie", chapters: 52, testament: "old" },
-        { name: "Lamentations", chapters: 5, testament: "old" }, { name: "Ézéchiel", chapters: 48, testament: "old" },
-        { name: "Daniel", chapters: 12, testament: "old" }, { name: "Osée", chapters: 14, testament: "old" },
-        { name: "Joël", chapters: 3, testament: "old" }, { name: "Amos", chapters: 9, testament: "old" },
-        { name: "Abdias", chapters: 1, testament: "old" }, { name: "Jonas", chapters: 4, testament: "old" },
-        { name: "Michée", chapters: 7, testament: "old" }, { name: "Nahum", chapters: 3, testament: "old" },
-        { name: "Habakuk", chapters: 3, testament: "old" }, { name: "Sophonie", chapters: 3, testament: "old" },
-        { name: "Aggée", chapters: 2, testament: "old" }, { name: "Zacharie", chapters: 14, testament: "old" },
-        { name: "Malachie", chapters: 4, testament: "old" },
-        // Nouveau Testament (27)
-        { name: "Matthieu", chapters: 28, testament: "new" }, { name: "Marc", chapters: 16, testament: "new" },
-        { name: "Luc", chapters: 24, testament: "new" }, { name: "Jean", chapters: 21, testament: "new" },
-        { name: "Actes", chapters: 28, testament: "new" }, { name: "Romains", chapters: 16, testament: "new" },
-        { name: "1 Corinthiens", chapters: 16, testament: "new" }, { name: "2 Corinthiens", chapters: 13, testament: "new" },
-        { name: "Galates", chapters: 6, testament: "new" }, { name: "Éphésiens", chapters: 6, testament: "new" },
-        { name: "Philippiens", chapters: 4, testament: "new" }, { name: "Colossiens", chapters: 4, testament: "new" },
-        { name: "1 Thessaloniciens", chapters: 5, testament: "new" }, { name: "2 Thessaloniciens", chapters: 3, testament: "new" },
-        { name: "1 Timothée", chapters: 6, testament: "new" }, { name: "2 Timothée", chapters: 4, testament: "new" },
-        { name: "Tite", chapters: 3, testament: "new" }, { name: "Philémon", chapters: 1, testament: "new" },
-        { name: "Hébreux", chapters: 13, testament: "new" }, { name: "Jacques", chapters: 5, testament: "new" },
-        { name: "1 Pierre", chapters: 5, testament: "new" }, { name: "2 Pierre", chapters: 3, testament: "new" },
-        { name: "1 Jean", chapters: 5, testament: "new" }, { name: "2 Jean", chapters: 1, testament: "new" },
-        { name: "3 Jean", chapters: 1, testament: "new" }, { name: "Jude", chapters: 1, testament: "new" },
-        { name: "Apocalypse", chapters: 22, testament: "new" }
-    ];
+        const STORAGE_KEY = "biblioPerso_complete_v8";
+        let currentBible = "evangelique"; // "evangelique" ou "catholique"
+        let booksData = [...EVANGELICAL_BOOKS];
+        let readingState = {};
+        let currentTestamentFilter = "all";
+        let currentSearch = "";
+        let charts = {};
+        
+        let isSelecting = false;
+        let selectionStartIndex = null;
+        let currentBookName = null;
 
-    // Clé localStorage unique pour chaque utilisateur (chaque navigateur/device a son espace)
-    // En utilisant localStorage, chaque utilisateur sur son propre navigateur a ses données personnelles.
-    // Aucun identifiant partagé : c'est naturellement isolé par navigateur.
-    const STORAGE_KEY = "biblioPerso_tracker_lsg";
-    
-    let readingState = {};      // { "Genèse": [bool, bool, ...] }
-    let currentTestamentFilter = "all";   // "all", "old", "new"
-    let currentSearchQuery = "";
+        function getBooksData() {
+            return currentBible === "evangelique" ? EVANGELICAL_BOOKS : CATHOLIC_BOOKS;
+        }
 
-    // Initialisation / localStorage (chaque utilisateur possède ses propres données stockées localement)
-    function loadState() {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                readingState = parsed;
-            } catch(e) { 
-                initDefaultState(); 
+        function getTotalBooksCount() {
+            return currentBible === "evangelique" ? 66 : 73;
+        }
+
+        function getATCount() {
+            return getBooksData().filter(b => b.testament === "old").length;
+        }
+
+        function getNTCount() {
+            return getBooksData().filter(b => b.testament === "new").length;
+        }
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem("biblioPerso_theme");
+            if (savedTheme === "dark") {
+                document.body.classList.add("dark");
+                updateThemeButton("dark");
+            } else {
+                document.body.classList.remove("dark");
+                updateThemeButton("light");
             }
-        } else {
-            initDefaultState();
         }
-        // ensure all books exist (synchronisation structure)
-        for (let book of BOOKS_DATA) {
-            if (!readingState[book.name] || readingState[book.name].length !== book.chapters) {
-                readingState[book.name] = new Array(book.chapters).fill(false);
+
+        function updateThemeButton(theme) {
+            const icon = document.getElementById("themeIcon");
+            const text = document.getElementById("themeText");
+            if (theme === "dark") {
+                icon.textContent = "☀️";
+                text.textContent = "Mode clair";
+            } else {
+                icon.textContent = "🌙";
+                text.textContent = "Mode sombre";
             }
         }
-        saveState();
-    }
 
-    function initDefaultState() {
-        readingState = {};
-        for (let book of BOOKS_DATA) {
-            readingState[book.name] = new Array(book.chapters).fill(false);
+        function toggleTheme() {
+            if (document.body.classList.contains("dark")) {
+                document.body.classList.remove("dark");
+                localStorage.setItem("biblioPerso_theme", "light");
+                updateThemeButton("light");
+            } else {
+                document.body.classList.add("dark");
+                localStorage.setItem("biblioPerso_theme", "dark");
+                updateThemeButton("dark");
+            }
+            updateStats();
         }
-    }
 
-    function saveState() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(readingState));
-    }
-
-    function toggleChapter(bookName, chapterIdx) {
-        if (readingState[bookName] && readingState[bookName][chapterIdx] !== undefined) {
-            readingState[bookName][chapterIdx] = !readingState[bookName][chapterIdx];
-            saveState();
-            renderAll();
-        }
-    }
-
-    function resetBook(bookName) {
-        const book = BOOKS_DATA.find(b => b.name === bookName);
-        if (book) {
-            readingState[bookName] = new Array(book.chapters).fill(false);
-            saveState();
-            renderAll();
-        }
-    }
-
-    function resetAllBible() {
-        if (confirm("⚠️ Réinitialiser TOUTE votre progression biblique ? Tous les chapitres seront marqués non lus. Cette action est définitive pour votre compte.")) {
-            initDefaultState();
-            saveState();
-            renderAll();
-        }
-    }
-
-    // Stats globales
-    function getGlobalStats() {
-        let totalChapters = 0, completedChapters = 0, completedBooks = 0;
-        for (let book of BOOKS_DATA) {
-            totalChapters += book.chapters;
-            const stateArr = readingState[book.name] || [];
-            let bookCompleted = 0;
-            for (let i = 0; i < book.chapters; i++) {
-                if (stateArr[i] === true) {
-                    completedChapters++;
-                    bookCompleted++;
+        function loadState() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    readingState = data.readingState || {};
+                    currentBible = data.currentBible || "evangelique";
+                } catch(e) { initDefault(); }
+            } else {
+                initDefault();
+            }
+            
+            booksData = getBooksData();
+            
+            for (let book of booksData) {
+                if (!readingState[book.name]) {
+                    readingState[book.name] = new Array(book.chapters).fill(false);
                 }
             }
-            if (bookCompleted === book.chapters && book.chapters > 0) completedBooks++;
-        }
-        return { totalChapters, completedChapters, completedBooks, totalBooks: BOOKS_DATA.length };
-    }
-
-    function updateStatsUI() {
-        const { totalChapters, completedChapters, completedBooks, totalBooks } = getGlobalStats();
-        document.getElementById("completedChaptersModern").innerText = completedChapters;
-        document.getElementById("totalChaptersModern").innerText = totalChapters;
-        document.getElementById("completedBooksModern").innerText = completedBooks;
-        document.getElementById("totalBooksModern").innerText = totalBooks;
-        const percent = totalChapters === 0 ? 0 : Math.round((completedChapters / totalChapters) * 100);
-        const circle = document.getElementById("globalCircleModern");
-        circle.innerText = `${percent}%`;
-        const angle = (percent / 100) * 360;
-        circle.style.background = `conic-gradient(#ffd700 ${angle}deg, rgba(255,255,255,0.3) ${angle}deg)`;
-    }
-
-    // Fonction de rendu avec filtres combinés (testament + recherche textuelle)
-    function renderAll() {
-        updateStatsUI();
-        const container = document.getElementById("booksContainerModern");
-        container.innerHTML = "";
-
-        let filteredBooks = [...BOOKS_DATA];
-        // Filtre testament
-        if (currentTestamentFilter !== "all") {
-            filteredBooks = filteredBooks.filter(book => book.testament === currentTestamentFilter);
-        }
-        // Filtre recherche
-        if (currentSearchQuery.trim() !== "") {
-            const query = currentSearchQuery.trim().toLowerCase();
-            filteredBooks = filteredBooks.filter(book => book.name.toLowerCase().includes(query));
+            saveState();
+            updateBibleSelectorUI();
         }
 
-        if (filteredBooks.length === 0) {
-            container.innerHTML = '<div class="empty-state">📭 Aucun livre trouvé. Modifiez vos filtres.</div>';
-            return;
+        function initDefault() {
+            readingState = {};
+            currentBible = "evangelique";
         }
 
-        for (let book of filteredBooks) {
-            const bookName = book.name;
-            const totalChaps = book.chapters;
-            const stateArr = readingState[bookName] || new Array(totalChaps).fill(false);
-            const completedCount = stateArr.filter(v => v === true).length;
-            const percentBook = totalChaps === 0 ? 0 : Math.round((completedCount / totalChaps) * 100);
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                readingState: readingState,
+                currentBible: currentBible
+            }));
+        }
 
-            const card = document.createElement("div");
-            card.className = "book-card-modern";
-
-            // Header
-            const header = document.createElement("div");
-            header.className = "book-header-modern";
-            header.innerHTML = `
-                <div class="book-info">
-                    <h3><span class="book-badge"></span> ${bookName}</h3>
-                    <div class="book-progress-modern">📖 ${completedCount}/${totalChaps} chapitres (${percentBook}%)</div>
-                </div>
-                <button class="reset-book-btn" data-book="${bookName}" title="Réinitialiser ce livre">↺ Réinitialiser</button>
-            `;
-            const resetBtn = header.querySelector(".reset-book-btn");
-            resetBtn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                if (confirm(`Effacer la progression du livre "${bookName}" ?`)) resetBook(bookName);
-            });
-
-            // Chapters
-            const chaptersContainer = document.createElement("div");
-            chaptersContainer.className = "chapters-grid";
-            for (let i = 0; i < totalChaps; i++) {
-                const chapDiv = document.createElement("div");
-                chapDiv.className = "chapter-pill";
-                if (stateArr[i] === true) chapDiv.classList.add("completed");
-                chapDiv.innerText = `${i+1}`;
-                chapDiv.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    toggleChapter(bookName, i);
-                });
-                chaptersContainer.appendChild(chapDiv);
+        function switchBible(bibleType) {
+            if (bibleType === currentBible) return;
+            
+            const oldReadingState = { ...readingState };
+            currentBible = bibleType;
+            booksData = getBooksData();
+            
+            const newReadingState = {};
+            for (let book of booksData) {
+                if (oldReadingState[book.name]) {
+                    newReadingState[book.name] = [...oldReadingState[book.name]];
+                } else {
+                    newReadingState[book.name] = new Array(book.chapters).fill(false);
+                }
             }
-
-            card.appendChild(header);
-            card.appendChild(chaptersContainer);
-            container.appendChild(card);
+            readingState = newReadingState;
+            saveState();
+            updateBibleSelectorUI();
+            renderBooks();
+            updateStats();
         }
-    }
 
-    // Initialisation des événements et filtres
-    function bindEvents() {
-        // Filtres testamentaires
-        document.querySelectorAll(".testament-btn").forEach(btn => {
-            btn.addEventListener("click", (e) => {
-                document.querySelectorAll(".testament-btn").forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
-                const filter = btn.getAttribute("data-filter");
-                if (filter === "all") currentTestamentFilter = "all";
-                else if (filter === "old") currentTestamentFilter = "old";
-                else if (filter === "new") currentTestamentFilter = "new";
-                renderAll();
+        function updateBibleSelectorUI() {
+            document.querySelectorAll(".bible-option").forEach(opt => {
+                if (opt.getAttribute("data-bible") === currentBible) {
+                    opt.classList.add("selected");
+                } else {
+                    opt.classList.remove("selected");
+                }
             });
-        });
+        }
 
-        // Recherche
-        const searchInput = document.getElementById("bookSearchModern");
-        searchInput.addEventListener("input", (e) => {
-            currentSearchQuery = e.target.value;
-            renderAll();
-        });
+        function getCompletedBooks() {
+            let nt = 0, at = 0, total = 0;
+            for (let book of booksData) {
+                const state = readingState[book.name] || [];
+                const completed = state.filter(v => v === true).length;
+                if (completed === book.chapters && book.chapters > 0) {
+                    total++;
+                    if (book.testament === "new") nt++;
+                    if (book.testament === "old") at++;
+                }
+            }
+            return { nt, at, total };
+        }
 
-        // Reset global
-        const resetAllBtn = document.getElementById("resetAllBtnModern");
-        resetAllBtn.addEventListener("click", () => resetAllBible());
-    }
+        function updateStats() {
+            const totals = getCompletedBooks();
+            const atTotal = getATCount();
+            const ntTotal = getNTCount();
+            const bibleTotal = getTotalBooksCount();
+            
+            document.getElementById("statsSummary").innerHTML = `
+                <div class="stat-card"><h4>📖 Bible en entier</h4><div class="value">${totals.total}</div><div>/${bibleTotal} livres</div></div>
+                <div class="stat-card"><h4>📜 Ancien Testament</h4><div class="value">${totals.at}</div><div>/${atTotal} livres</div></div>
+                <div class="stat-card"><h4>✝️ Nouveau Testament</h4><div class="value">${totals.nt}</div><div>/${ntTotal} livres</div></div>
+            `;
 
-    // lancement
-    function init() {
+            if (charts.statsChart) charts.statsChart.destroy();
+            const ctx = document.getElementById("statsChart").getContext("2d");
+            charts.statsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Ancien Testament', 'Nouveau Testament', 'Bible complète'],
+                    datasets: [
+                        { label: 'Livres lus', data: [totals.at, totals.nt, totals.total], backgroundColor: '#2c5f2d', borderRadius: 10 },
+                        { label: 'Objectif total', data: [atTotal, ntTotal, bibleTotal], backgroundColor: '#ffd700', borderRadius: 10 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } } }
+            });
+
+            if (charts.testamentChart) charts.testamentChart.destroy();
+            const ctx2 = document.getElementById("testamentChart").getContext("2d");
+            charts.testamentChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ancien Testament', 'Nouveau Testament'],
+                    datasets: [{ data: [totals.at, totals.nt], backgroundColor: ['#2c5f2d', '#ffd700'] }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        function validateBook(bookName) {
+            const book = booksData.find(b => b.name === bookName);
+            if (book && confirm(`Valider tous les ${book.chapters} chapitres de ${bookName} ?`)) {
+                readingState[bookName] = new Array(book.chapters).fill(true);
+                saveState();
+                renderBooks();
+                updateStats();
+            }
+        }
+
+        function toggleChaptersRange(bookName, startIdx, endIdx) {
+            const minIdx = Math.min(startIdx, endIdx);
+            const maxIdx = Math.max(startIdx, endIdx);
+            const allSelectedTrue = Array.from({ length: maxIdx - minIdx + 1 }, (_, i) => readingState[bookName][minIdx + i]).every(v => v === true);
+            
+            for (let i = minIdx; i <= maxIdx; i++) {
+                readingState[bookName][i] = !allSelectedTrue;
+            }
+            saveState();
+            renderBooks();
+            updateStats();
+        }
+
+        function renderBooks() {
+            const container = document.getElementById("booksContainer");
+            let filtered = booksData.filter(b => {
+                if (currentTestamentFilter !== "all" && b.testament !== currentTestamentFilter) return false;
+                if (currentSearch && !b.name.toLowerCase().includes(currentSearch.toLowerCase())) return false;
+                return true;
+            });
+
+            container.innerHTML = "";
+            for (let book of filtered) {
+                const state = readingState[book.name] || [];
+                const completed = state.filter(v => v === true).length;
+                const percent = Math.round((completed / book.chapters) * 100);
+                
+                const card = document.createElement("div");
+                card.className = "book-card";
+                card.innerHTML = `
+                    <div class="book-header">
+                        <span class="book-name">📖 ${book.name}</span>
+                        <div class="book-actions">
+                            <span class="book-progress">${completed}/${book.chapters} (${percent}%)</span>
+                            <button class="btn-icon validate-book" data-book="${book.name}">✅ Tout valider</button>
+                            <button class="reset-book-btn" data-book="${book.name}">↺</button>
+                        </div>
+                    </div>
+                    <div class="chapters-list" data-book="${book.name}" id="chapters-${book.name.replace(/\s/g, '')}"></div>
+                `;
+                
+                const chaptersDiv = card.querySelector(`.chapters-list`);
+                
+                for (let i = 0; i < book.chapters; i++) {
+                    const chap = document.createElement("div");
+                    chap.className = "chapter-pill";
+                    if (state[i]) chap.classList.add("completed");
+                    chap.innerText = i + 1;
+                    chap.dataset.index = i;
+                    
+                    chap.addEventListener("mousedown", (e) => {
+                        if (e.ctrlKey || e.metaKey) {
+                            isSelecting = true;
+                            selectionStartIndex = i;
+                            currentBookName = book.name;
+                            e.preventDefault();
+                        }
+                    });
+                    
+                    chap.addEventListener("mouseenter", () => {
+                        if (isSelecting && currentBookName === book.name && selectionStartIndex !== null) {
+                            const endIndex = i;
+                            const minIdx = Math.min(selectionStartIndex, endIndex);
+                            const maxIdx = Math.max(selectionStartIndex, endIndex);
+                            const allChaps = chaptersDiv.querySelectorAll(".chapter-pill");
+                            for (let j = minIdx; j <= maxIdx; j++) {
+                                allChaps[j].classList.add("selected");
+                            }
+                        }
+                    });
+                    
+                    chap.addEventListener("mouseup", (e) => {
+                        if (isSelecting && currentBookName === book.name && selectionStartIndex !== null) {
+                            toggleChaptersRange(book.name, selectionStartIndex, i);
+                            isSelecting = false;
+                            selectionStartIndex = null;
+                            currentBookName = null;
+                        }
+                    });
+                    
+                    chap.onclick = (e) => {
+                        if (!isSelecting && !(e.ctrlKey || e.metaKey)) {
+                            readingState[book.name][i] = !readingState[book.name][i];
+                            saveState();
+                            renderBooks();
+                            updateStats();
+                        }
+                    };
+                    
+                    chaptersDiv.appendChild(chap);
+                }
+                
+                chaptersDiv.addEventListener("mouseleave", () => {
+                    if (isSelecting) {
+                        isSelecting = false;
+                        selectionStartIndex = null;
+                        currentBookName = null;
+                        const selected = chaptersDiv.querySelectorAll(".chapter-pill.selected");
+                        selected.forEach(s => s.classList.remove("selected"));
+                    }
+                });
+                
+                const validateBtn = card.querySelector(".validate-book");
+                validateBtn.onclick = () => validateBook(book.name);
+                
+                const resetBtn = card.querySelector(".reset-book-btn");
+                resetBtn.onclick = () => {
+                    if (confirm(`Réinitialiser ${book.name} ?`)) {
+                        readingState[book.name] = new Array(book.chapters).fill(false);
+                        saveState();
+                        renderBooks();
+                        updateStats();
+                    }
+                };
+                container.appendChild(card);
+            }
+        }
+
+        function bindEvents() {
+            document.querySelectorAll(".testament-btn").forEach(btn => {
+                btn.onclick = () => {
+                    document.querySelectorAll(".testament-btn").forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    currentTestamentFilter = btn.getAttribute("data-filter");
+                    renderBooks();
+                };
+            });
+            
+            document.getElementById("searchInput").oninput = (e) => {
+                currentSearch = e.target.value;
+                renderBooks();
+            };
+            
+            document.querySelectorAll(".nav-item").forEach(item => {
+                item.onclick = () => {
+                    document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
+                    item.classList.add("active");
+                    const section = item.getAttribute("data-section");
+                    document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+                    document.getElementById(`${section}-section`).classList.add("active");
+                    if (section === "stats") updateStats();
+                    closeSidebar();
+                };
+            });
+
+            document.querySelectorAll(".bible-option").forEach(opt => {
+                opt.onclick = () => {
+                    const bibleType = opt.getAttribute("data-bible");
+                    switchBible(bibleType);
+                };
+            });
+
+            document.getElementById("themeToggleBtn").onclick = () => toggleTheme();
+
+            const hamburger = document.getElementById("hamburgerBtn");
+            const sidebar = document.getElementById("sidebar");
+            const overlay = document.getElementById("overlay");
+            hamburger.onclick = () => {
+                sidebar.classList.toggle("open");
+                overlay.classList.toggle("active");
+            };
+            overlay.onclick = () => {
+                sidebar.classList.remove("open");
+                overlay.classList.remove("active");
+            };
+            
+            document.addEventListener("mouseup", () => {
+                if (isSelecting) {
+                    isSelecting = false;
+                    selectionStartIndex = null;
+                    currentBookName = null;
+                    document.querySelectorAll(".chapter-pill.selected").forEach(s => s.classList.remove("selected"));
+                }
+            });
+        }
+
+        function closeSidebar() {
+            if (window.innerWidth <= 768) {
+                document.getElementById("sidebar").classList.remove("open");
+                document.getElementById("overlay").classList.remove("active");
+            }
+        }
+
         loadState();
+        initTheme();
         bindEvents();
-        renderAll();
-    }
-
-    init();
-</script>
+        renderBooks();
+        updateStats();
+    </script>
 </body>
 </html>
